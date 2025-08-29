@@ -1,36 +1,245 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Polly - Interactive Polling Platform
+
+A modern polling application built with Next.js 15, TypeScript, and Shadcn/ui components. Create, share, and vote on polls with real-time results and analytics.
+
+## Features
+
+- 🗳️ Create and manage polls with multiple options
+- 📊 Real-time voting and results visualization
+- 👤 User authentication and profiles
+- 📱 Responsive design for all devices
+- 🎨 Modern UI with Shadcn/ui components
+- 🔒 Private and public poll options
+- ⚙️ Poll settings (multiple choice, expiry dates, etc.)
+- 📈 Basic analytics and statistics
+- 🚀 Built with Next.js 15 and TypeScript
+
+## Tech Stack
+
+- **Framework**: Next.js 15 with App Router
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS v4
+- **UI Components**: Shadcn/ui
+- **Icons**: Lucide React (via Shadcn/ui)
+- **State Management**: React Context + Hooks
+- **Authentication**: Supabase Auth with OAuth support
+- **Database**: Supabase (PostgreSQL)
+
+## Project Structure
+
+```
+src/
+├── app/                          # Next.js App Router pages
+│   ├── auth/                     # Authentication pages
+│   │   ├── login/page.tsx       # Login page
+│   │   └── register/page.tsx    # Registration page
+│   ├── dashboard/               # User dashboard
+│   │   └── page.tsx            # Dashboard overview
+│   ├── polls/                   # Poll-related pages
+│   │   ├── create/page.tsx     # Create new poll
+│   │   └── page.tsx            # Browse polls
+│   ├── globals.css             # Global styles
+│   ├── layout.tsx              # Root layout with providers
+│   └── page.tsx                # Home page (redirects to /polls)
+├── components/                  # React components
+│   ├── auth/                   # Authentication components
+│   │   ├── login-form.tsx      # Login form component
+│   │   └── register-form.tsx   # Registration form component
+│   ├── layout/                 # Layout components
+│   │   ├── header.tsx          # Main navigation header
+│   │   └── sidebar.tsx         # Dashboard sidebar
+│   ├── polls/                  # Poll-related components
+│   │   ├── create-poll-form.tsx # Poll creation form
+│   │   └── poll-card.tsx       # Poll display component
+│   └── ui/                     # Shadcn/ui components
+│       ├── button.tsx          # Button component
+│       ├── card.tsx            # Card component
+│       ├── input.tsx           # Input component
+│       └── ... (other UI components)
+├── lib/                        # Utility libraries
+│   ├── api/                    # API functions
+│   │   ├── auth.ts            # Authentication API
+│   │   └── polls.ts           # Poll API functions
+│   ├── hooks/                  # Custom React hooks
+│   │   └── useAuth.ts         # Authentication hook
+│   ├── types/                  # TypeScript type definitions
+│   │   └── index.ts           # Main type definitions
+│   └── utils.ts               # Utility functions
+└── ... (config files)
+```
 
 ## Getting Started
 
-First, run the development server:
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd alx-polly
+   ```
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+3. **Start the development server**
+   ```bash
+   npm run dev
+   ```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+4. **Open your browser**
+   Navigate to [http://localhost:3000](http://localhost:3000)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Current Features
 
-## Learn More
+### Authentication
+- ✅ Login and registration forms with validation
+- ✅ Supabase authentication integration
+- ✅ OAuth support (Google, GitHub)
+- ✅ Protected routes and authentication context
+- ✅ Email verification and password reset
+- ✅ User profile management with metadata
 
-To learn more about Next.js, take a look at the following resources:
+### Polls
+- ✅ Browse polls with search and filtering
+- ✅ Create new polls with multiple options
+- ✅ Poll settings (public/private, multiple choice, expiry)
+- ✅ Vote on polls with real-time UI updates
+- ✅ Poll analytics and statistics display
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Dashboard
+- ✅ User dashboard with statistics
+- ✅ Recent activity tracking
+- ✅ Quick action buttons
+- ✅ Progress tracking and achievements
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### UI/UX
+- ✅ Responsive design for mobile and desktop
+- ✅ Modern UI with Shadcn/ui components
+- ✅ Loading states and error handling
+- ✅ Accessible components and navigation
+- ✅ Server-side authentication with middleware
+- ✅ Row Level Security (RLS) ready database schema
 
-## Deploy on Vercel
+## Getting Started
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Prerequisites
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Node.js 18+ installed
+- A Supabase account (free tier available)
+
+### Quick Setup
+
+1. **Clone and install dependencies**
+   ```bash
+   git clone <repository-url>
+   cd alx-polly
+   npm install
+   ```
+
+2. **Set up Supabase**
+   - Follow the detailed [Supabase Setup Guide](./SUPABASE_SETUP.md)
+   - Create a new project at [supabase.com](https://supabase.com)
+   - Copy your project URL and anon key
+
+3. **Configure environment variables**
+   ```bash
+   cp .env.example .env.local
+   ```
+   Update `.env.local` with your Supabase credentials:
+   ```env
+   NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+   ```
+
+4. **Run the development server**
+   ```bash
+   npm run dev
+   ```
+
+5. **Visit the app**
+   Open [http://localhost:3000](http://localhost:3000) and create your account!
+
+## Development Notes
+
+### Authentication
+The app uses Supabase Auth with the following features:
+- Email/password authentication
+- OAuth providers (Google, GitHub)
+- Email verification and password reset
+- Server-side auth with middleware protection
+- Automatic user profile creation
+
+### Database Integration
+The project uses Supabase for backend services:
+- PostgreSQL database with Row Level Security
+- Real-time subscriptions ready
+- Automatic API generation
+- Built-in authentication and user management
+- Ready-to-use database schema for polls and votes
+
+### Component Architecture
+- Reusable UI components with Shadcn/ui
+- Separation of concerns with dedicated folders
+- TypeScript for type safety
+- Props interfaces for all components
+
+## Customization
+
+### Styling
+- Modify `src/app/globals.css` for global styles
+- Use Tailwind classes for component styling
+- Customize Shadcn/ui theme in `components.json`
+
+### Components
+- All UI components are in `src/components/ui/`
+- Business logic components are organized by feature
+- Easy to extend and customize
+
+### Types
+- All TypeScript types are defined in `src/lib/types/`
+- Comprehensive type coverage for API responses
+- Easy to extend for new features
+
+## Next Steps for Production
+
+1. **Database Setup**
+   - Run the SQL schema from the Supabase Setup Guide
+   - Configure Row Level Security policies
+   - Set up database backups and monitoring
+
+2. **Real-time Features**
+   - Implement Supabase real-time subscriptions
+   - Live poll updates and vote counting
+   - Real-time notifications system
+
+3. **Advanced Features**
+   - File uploads with Supabase Storage
+   - Social sharing integration
+   - Advanced analytics dashboard
+   - Email notifications with custom SMTP
+   - Poll templates and categories
+
+4. **Performance & Security**
+   - Implement caching with Supabase Edge Functions
+   - Add loading skeletons and optimistic updates
+   - Set up rate limiting and abuse prevention
+   - Configure CORS and security headers
+
+5. **Testing & Deployment**
+   - Add unit tests with Jest and Testing Library
+   - Integration tests with Supabase local development
+   - E2E tests with Playwright
+   - Set up CI/CD with Vercel or Netlify
+   - Configure environment variables for production
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
