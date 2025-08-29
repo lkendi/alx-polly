@@ -21,113 +21,26 @@ import {
 import { PollCard } from "@/components/polls/poll-card";
 import { Header } from "@/components/layout/header";
 import { useAuth } from "@/lib/hooks/useAuth";
+import { pollsApi } from "@/lib/api/polls";
+import { Poll } from "@/lib/types";
 import Link from "next/link";
-
-// Mock poll type for this page
-interface MockPoll {
-  id: string;
-  title: string;
-  description: string;
-  options: Array<{
-    id: string;
-    text: string;
-    votes: number;
-  }>;
-  creator: {
-    id: string;
-    username: string;
-    avatar?: string;
-  };
-  totalVotes: number;
-  isPublic: boolean;
-  allowMultipleVotes: boolean;
-  expiresAt?: Date;
-  createdAt: Date;
-  hasVoted: boolean;
-  userVotes: string[];
-}
-
-// Mock data for development
-const mockPolls: MockPoll[] = [
-  {
-    id: "1",
-    title: "What's your favorite programming language?",
-    description:
-      "Help us understand the most popular programming languages in our community.",
-    options: [
-      { id: "1a", text: "JavaScript", votes: 45 },
-      { id: "1b", text: "Python", votes: 38 },
-      { id: "1c", text: "TypeScript", votes: 32 },
-      { id: "1d", text: "Go", votes: 15 },
-    ],
-    creator: {
-      id: "user1",
-      username: "devjohn",
-    },
-    totalVotes: 130,
-    isPublic: true,
-    allowMultipleVotes: false,
-    expiresAt: new Date("2024-12-31"),
-    createdAt: new Date("2024-01-15"),
-    hasVoted: true,
-    userVotes: ["1a"],
-  },
-  {
-    id: "2",
-    title: "Which features should we prioritize for the next release?",
-    description:
-      "Your input helps us decide what to build next. Select multiple options if needed.",
-    options: [
-      { id: "2a", text: "Dark mode", votes: 67 },
-      { id: "2b", text: "Mobile app", votes: 89 },
-      { id: "2c", text: "API access", votes: 34 },
-      { id: "2d", text: "Real-time notifications", votes: 56 },
-      { id: "2e", text: "Advanced analytics", votes: 23 },
-    ],
-    creator: {
-      id: "user2",
-      username: "productmanager",
-    },
-    totalVotes: 269,
-    isPublic: true,
-    allowMultipleVotes: true,
-    createdAt: new Date("2024-01-20"),
-    hasVoted: false,
-    userVotes: [],
-  },
-  {
-    id: "3",
-    title: "Best time for team meetings?",
-    description: "",
-    options: [
-      { id: "3a", text: "9:00 AM", votes: 12 },
-      { id: "3b", text: "2:00 PM", votes: 8 },
-      { id: "3c", text: "4:00 PM", votes: 15 },
-    ],
-    creator: {
-      id: "user3",
-      username: "teamlead",
-    },
-    totalVotes: 35,
-    isPublic: false,
-    allowMultipleVotes: false,
-    expiresAt: new Date("2024-02-01"),
-    createdAt: new Date("2024-01-25"),
-    hasVoted: false,
-    userVotes: [],
-  },
-];
 
 export default function PollsPage() {
   const { user } = useAuth();
-  const [polls, setPolls] = useState<MockPoll[]>(mockPolls as MockPoll[]);
-  const [filteredPolls, setFilteredPolls] = useState<MockPoll[]>(
-    mockPolls as MockPoll[],
-  );
+  const [polls, setPolls] = useState<Poll[]>([]);
+  const [filteredPolls, setFilteredPolls] = useState<Poll[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("created");
   const [filterBy, setFilterBy] = useState("all");
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+
+  // Fetch polls from API
+  useEffect(() => {
+    fetchPolls();
+  }, []);
 
   // Filter and sort polls based on current filters
   useEffect(() => {
@@ -138,7 +51,10 @@ export default function PollsPage() {
       filtered = filtered.filter(
         (poll) =>
           poll.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          poll.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (poll.description &&
+            poll.description
+              .toLowerCase()
+              .includes(searchQuery.toLowerCase())) ||
           poll.creator.username
             .toLowerCase()
             .includes(searchQuery.toLowerCase()),
@@ -155,10 +71,14 @@ export default function PollsPage() {
           filtered = filtered.filter((poll) => !poll.isPublic);
           break;
         case "voted":
-          filtered = filtered.filter((poll) => poll.hasVoted);
+          filtered = filtered.filter(
+            (poll) => poll.userVotes && poll.userVotes.length > 0,
+          );
           break;
         case "not-voted":
-          filtered = filtered.filter((poll) => !poll.hasVoted);
+          filtered = filtered.filter(
+            (poll) => !poll.userVotes || poll.userVotes.length === 0,
+          );
           break;
         case "active":
           filtered = filtered.filter(
@@ -199,42 +119,56 @@ export default function PollsPage() {
     setFilteredPolls(filtered);
   }, [polls, searchQuery, sortBy, filterBy]);
 
+  const fetchPolls = async (pageNum = 1, append = false) => {
+    try {
+      setIsLoading(true);
+      setError("");
+
+      const response = await pollsApi.getPolls(pageNum, 10, {
+        isPublic: true,
+        search: searchQuery.trim() || undefined,
+      });
+
+      if (append) {
+        setPolls((prev) => [...prev, ...response.polls]);
+      } else {
+        setPolls(response.polls);
+      }
+
+      setHasMore(pageNum < response.pagination.totalPages);
+      setPage(pageNum);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load polls");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const loadMore = () => {
+    if (!isLoading && hasMore) {
+      fetchPolls(page + 1, true);
+    }
+  };
+
   const handleVote = async (pollId: string, optionIds: string[]) => {
-    setIsLoading(true);
+    try {
+      await pollsApi.voteOnPoll(pollId, optionIds);
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+      // Refresh the specific poll to get updated vote counts
+      const updatedPoll = await pollsApi.getPollById(pollId);
 
-    // Update the poll with the vote
-    setPolls((prevPolls) =>
-      prevPolls.map((poll) => {
-        if (poll.id === pollId) {
-          const updatedOptions = poll.options.map((option) => ({
-            ...option,
-            votes: optionIds.includes(option.id)
-              ? option.votes + 1
-              : option.votes,
-          }));
-
-          return {
-            ...poll,
-            options: updatedOptions,
-            totalVotes: poll.totalVotes + optionIds.length,
-            hasVoted: true,
-            userVotes: optionIds,
-          };
-        }
-        return poll;
-      }),
-    );
-
-    setIsLoading(false);
+      setPolls((prevPolls) =>
+        prevPolls.map((poll) => (poll.id === pollId ? updatedPoll : poll)),
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to submit vote");
+    }
   };
 
   const stats = {
     total: polls.length,
     public: polls.filter((p) => p.isPublic).length,
-    voted: polls.filter((p) => p.hasVoted).length,
+    voted: polls.filter((p) => p.userVotes && p.userVotes.length > 0).length,
     active: polls.filter((p) => !p.expiresAt || new Date() < p.expiresAt)
       .length,
   };
@@ -251,6 +185,11 @@ export default function PollsPage() {
             <p className="text-muted-foreground">
               Discover and vote on polls from the community
             </p>
+            {error && (
+              <div className="mt-2 p-2 text-sm text-red-600 bg-red-50 border border-red-200 rounded">
+                {error}
+              </div>
+            )}
           </div>
           <Button asChild>
             <Link href="/polls/create">
@@ -384,7 +323,25 @@ export default function PollsPage() {
         )}
 
         {/* Polls List */}
-        {filteredPolls.length > 0 ? (
+        {isLoading && polls.length === 0 ? (
+          <div className="space-y-6">
+            {[...Array(3)].map((_, i) => (
+              <Card key={i}>
+                <CardContent className="p-6">
+                  <div className="animate-pulse space-y-4">
+                    <div className="h-6 bg-gray-200 rounded w-3/4"></div>
+                    <div className="h-4 bg-gray-200 rounded w-full"></div>
+                    <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+                    <div className="space-y-2">
+                      <div className="h-10 bg-gray-200 rounded"></div>
+                      <div className="h-10 bg-gray-200 rounded"></div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : filteredPolls.length > 0 ? (
           <div className="space-y-6">
             {filteredPolls.map((poll) => (
               <PollCard
@@ -429,10 +386,10 @@ export default function PollsPage() {
           </Card>
         )}
 
-        {/* Load More Button (for future pagination) */}
-        {filteredPolls.length > 0 && filteredPolls.length >= 10 && (
+        {/* Load More Button */}
+        {filteredPolls.length > 0 && hasMore && (
           <div className="text-center mt-8">
-            <Button variant="outline" disabled={isLoading}>
+            <Button variant="outline" disabled={isLoading} onClick={loadMore}>
               {isLoading ? (
                 <div className="flex items-center space-x-2">
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-muted-foreground"></div>

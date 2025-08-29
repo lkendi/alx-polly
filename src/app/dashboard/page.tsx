@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { PollCard } from "@/components/polls/poll-card";
 import { useAuth } from "@/lib/hooks/useAuth";
+import { Poll } from "@/lib/types";
 
 // Mock data for development
 
@@ -34,44 +35,60 @@ const mockRecentPolls = [
     description:
       "Help us understand the most popular programming languages in our community.",
     options: [
-      { id: "1a", text: "JavaScript", votes: 45 },
-      { id: "1b", text: "Python", votes: 38 },
-      { id: "1c", text: "TypeScript", votes: 32 },
-      { id: "1d", text: "Go", votes: 15 },
+      { id: "1a", text: "JavaScript", votes: 45, pollId: "1" },
+      { id: "1b", text: "Python", votes: 38, pollId: "1" },
+      { id: "1c", text: "TypeScript", votes: 32, pollId: "1" },
+      { id: "1d", text: "Go", votes: 15, pollId: "1" },
     ],
     creator: {
-      id: "currentuser",
-      username: "johndoe",
-      avatar: undefined,
+      id: "user1",
+      username: "devjohn",
+      email: "devjohn@example.com",
+      createdAt: new Date("2023-01-01"),
+      updatedAt: new Date("2023-01-01"),
     },
+    creatorId: "user1",
     totalVotes: 130,
     isPublic: true,
     allowMultipleVotes: false,
+    allowAddOptions: false,
     expiresAt: new Date("2024-12-31"),
     createdAt: new Date("2024-01-15"),
-    hasVoted: true,
-    userVotes: ["1a"],
+    updatedAt: new Date("2024-01-15"),
+    userVotes: [
+      {
+        id: "vote1",
+        userId: "currentuser",
+        pollId: "1",
+        optionId: "1a",
+        createdAt: new Date("2024-01-16"),
+      },
+    ],
   },
   {
     id: "2",
     title: "Best time for team meetings?",
     description: "",
     options: [
-      { id: "2a", text: "9:00 AM", votes: 12 },
-      { id: "2b", text: "2:00 PM", votes: 8 },
-      { id: "2c", text: "4:00 PM", votes: 15 },
+      { id: "2a", text: "9:00 AM", votes: 12, pollId: "2" },
+      { id: "2b", text: "2:00 PM", votes: 8, pollId: "2" },
+      { id: "2c", text: "4:00 PM", votes: 15, pollId: "2" },
     ],
     creator: {
       id: "currentuser",
       username: "johndoe",
-      avatar: undefined,
+      email: "john@example.com",
+      createdAt: new Date("2023-01-01"),
+      updatedAt: new Date("2023-01-01"),
     },
+    creatorId: "currentuser",
     totalVotes: 35,
     isPublic: false,
     allowMultipleVotes: false,
+    allowAddOptions: false,
     expiresAt: new Date("2024-02-01"),
     createdAt: new Date("2024-01-25"),
-    hasVoted: false,
+    updatedAt: new Date("2024-01-25"),
     userVotes: [],
   },
 ];

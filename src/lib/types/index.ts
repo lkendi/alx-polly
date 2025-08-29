@@ -52,7 +52,7 @@ export interface Poll {
   updatedAt: Date;
   totalVotes: number;
   hasVoted?: boolean;
-  userVotes?: string[]; // Option IDs that the current user voted for
+  userVotes?: Vote[]; // User's votes on this poll
 }
 
 export interface CreatePollData {
@@ -62,7 +62,7 @@ export interface CreatePollData {
   isPublic?: boolean;
   allowMultipleVotes?: boolean;
   allowAddOptions?: boolean;
-  expiresAt?: Date;
+  expiresAt?: string;
 }
 
 export interface Vote {
@@ -96,9 +96,9 @@ export interface PollFilters {
   search?: string;
   category?: string;
   isPublic?: boolean;
-  createdBy?: 'me' | 'others' | 'all';
-  sortBy?: 'created' | 'votes' | 'title';
-  sortOrder?: 'asc' | 'desc';
+  createdBy?: "me" | "others" | "all";
+  sortBy?: "created" | "votes" | "title";
+  sortOrder?: "asc" | "desc";
 }
 
 export interface DashboardStats {
@@ -147,10 +147,10 @@ export interface AppError {
 }
 
 // Theme Types
-export type Theme = 'light' | 'dark' | 'system';
+export type Theme = "light" | "dark" | "system";
 
 // Poll Status
-export type PollStatus = 'active' | 'expired' | 'draft';
+export type PollStatus = "active" | "expired" | "draft";
 
 // Vote Status
-export type VoteStatus = 'not_voted' | 'voted' | 'multiple_voted';
+export type VoteStatus = "not_voted" | "voted" | "multiple_voted";

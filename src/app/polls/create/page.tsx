@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { pollsApi } from "@/lib/api/polls";
 import Link from "next/link";
 
 export default function CreatePollPage() {
@@ -33,17 +34,11 @@ export default function CreatePollPage() {
     setError("");
 
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      const poll = await pollsApi.createPoll(data);
+      console.log("Poll created:", poll);
 
-      // Simulate successful poll creation
-      console.log("Poll created:", data);
-
-      // Generate mock poll ID
-      const pollId = "poll_" + Date.now();
-
-      // In a real app, you would get the poll ID from the API response
-      router.push(`/polls/${pollId}`);
+      // Redirect to the created poll
+      router.push(`/polls/${poll.id}`);
     } catch (err) {
       setError(
         err instanceof Error
