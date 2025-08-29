@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Header } from "@/components/layout/header";
 import {
   Card,
@@ -16,8 +17,25 @@ import { Progress } from "@/components/ui/progress";
 import { PollCard } from "@/components/polls/poll-card";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { Poll } from "@/lib/types";
+import { pollsApi } from "@/lib/api/polls";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
-// Mock data for development
+// Dashboard stats interface
+interface DashboardStats {
+  totalPolls: number;
+  totalVotes: number;
+  myPolls: number;
+  myVotes: number;
+}
 
 const mockStats = {
   totalPolls: 12,
@@ -130,10 +148,104 @@ const mockRecentActivity = [
 
 export default function DashboardPage() {
   const { user } = useAuth();
-  const [stats, setStats] = useState(mockStats);
-  const [recentPolls, setRecentPolls] = useState(mockRecentPolls);
+  const router = useRouter();
+  const [stats, setStats] = useState<DashboardStats>({
+    totalPolls: 0,
+    totalVotes: 0,
+    myPolls: 0,
+    myVotes: 0,
+  });
+  const [recentPolls, setRecentPolls] = useState<Poll[]>([]);
   const [recentActivity, setRecentActivity] = useState(mockRecentActivity);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [pollToDelete, setPollToDelete] = useState<string | null>(null);
+  const [deletingPoll, setDeletingPoll] = useState(false);
+
+  // Fetch dashboard data on component mount
+  useEffect(() => {
+    if (user) {
+      fetchDashboardData();
+    }
+  }, [user]);
+
+  const fetchDashboardData = async () => {
+    if (!user) return;
+
+    try {
+      setIsLoading(true);
+      setError("");
+
+      // Fetch user's own polls
+      const myPollsResponse = await pollsApi.getMyPolls(1, 10);
+
+      // Fetch recent public polls for activity
+      const recentPollsResponse = await pollsApi.getPolls(1, 5, {
+        isPublic: true,
+      });
+
+      setRecentPolls(myPollsResponse.polls);
+
+      // Calculate stats
+      const myPolls = myPollsResponse.polls;
+      const totalVotesInMyPolls = myPolls.reduce(
+        (sum, poll) => sum + poll.totalVotes,
+        0,
+      );
+
+      setStats({
+        totalPolls: recentPollsResponse.pagination.total,
+        totalVotes: totalVotesInMyPolls,
+        myPolls: myPolls.length,
+        myVotes: 0, // We'd need to fetch user's votes across all polls for this
+      });
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to load dashboard data",
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleEditPoll = (pollId: string) => {
+    router.push(`/polls/${pollId}/edit`);
+  };
+
+  const handleDeletePoll = (pollId: string) => {
+    setPollToDelete(pollId);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDeletePoll = async () => {
+    if (!pollToDelete) return;
+
+    try {
+      setDeletingPoll(true);
+      await pollsApi.deletePoll(pollToDelete);
+
+      // Refresh dashboard data after deletion
+      await fetchDashboardData();
+
+      setDeleteDialogOpen(false);
+      setPollToDelete(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete poll");
+    } finally {
+      setDeletingPoll(false);
+    }
+  };
+
+  const handleVote = async (pollId: string, optionIds: string[]) => {
+    try {
+      await pollsApi.voteOnPoll(pollId, optionIds);
+      // Refresh dashboard data to update vote counts
+      await fetchDashboardData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to submit vote");
+    }
+  };
 
   const formatDate = (date: Date) => {
     return new Intl.DateTimeFormat("en-US", {
@@ -189,19 +301,28 @@ export default function DashboardPage() {
           </p>
         </div>
 
+        {/* Error Message */}
+        {error && (
+          <div className="mb-6 p-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">
+            {error}
+          </div>
+        )}
+
         {/* Stats Overview */}
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4 mb-8">
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center">
                 <div className="text-2xl font-bold text-blue-600">
-                  {stats.pollsCreated}
+                  {isLoading ? (
+                    <div className="animate-pulse h-6 bg-gray-200 rounded w-8"></div>
+                  ) : (
+                    stats.myPolls
+                  )}
                 </div>
                 <div className="ml-auto text-2xl">📝</div>
               </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Polls Created
-              </p>
+              <p className="text-xs text-muted-foreground mt-1">My Polls</p>
             </CardContent>
           </Card>
 
@@ -209,11 +330,17 @@ export default function DashboardPage() {
             <CardContent className="p-6">
               <div className="flex items-center">
                 <div className="text-2xl font-bold text-green-600">
-                  {stats.totalVotes}
+                  {isLoading ? (
+                    <div className="animate-pulse h-6 bg-gray-200 rounded w-8"></div>
+                  ) : (
+                    stats.totalVotes
+                  )}
                 </div>
                 <div className="ml-auto text-2xl">📊</div>
               </div>
-              <p className="text-xs text-muted-foreground mt-1">Total Votes</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Votes Received
+              </p>
             </CardContent>
           </Card>
 
@@ -221,11 +348,15 @@ export default function DashboardPage() {
             <CardContent className="p-6">
               <div className="flex items-center">
                 <div className="text-2xl font-bold text-purple-600">
-                  {stats.pollsVoted}
+                  {isLoading ? (
+                    <div className="animate-pulse h-6 bg-gray-200 rounded w-8"></div>
+                  ) : (
+                    stats.myVotes
+                  )}
                 </div>
                 <div className="ml-auto text-2xl">🗳️</div>
               </div>
-              <p className="text-xs text-muted-foreground mt-1">Polls Voted</p>
+              <p className="text-xs text-muted-foreground mt-1">My Votes</p>
             </CardContent>
           </Card>
 
@@ -233,11 +364,17 @@ export default function DashboardPage() {
             <CardContent className="p-6">
               <div className="flex items-center">
                 <div className="text-2xl font-bold text-orange-600">
-                  {stats.activePolls}
+                  {isLoading ? (
+                    <div className="animate-pulse h-6 bg-gray-200 rounded w-8"></div>
+                  ) : (
+                    stats.totalPolls
+                  )}
                 </div>
-                <div className="ml-auto text-2xl">⚡</div>
+                <div className="ml-auto text-2xl">📋</div>
               </div>
-              <p className="text-xs text-muted-foreground mt-1">Active Polls</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Community Polls
+              </p>
             </CardContent>
           </Card>
         </div>
@@ -303,13 +440,30 @@ export default function DashboardPage() {
               </Button>
             </div>
 
-            {recentPolls.length > 0 ? (
+            {isLoading ? (
+              <div className="space-y-4">
+                {[...Array(3)].map((_, i) => (
+                  <Card key={i}>
+                    <CardContent className="p-4">
+                      <div className="animate-pulse space-y-2">
+                        <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                        <div className="h-3 bg-gray-200 rounded w-full"></div>
+                        <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : recentPolls.length > 0 ? (
               <div className="space-y-4">
                 {recentPolls.map((poll) => (
                   <PollCard
                     key={poll.id}
                     poll={poll}
                     currentUserId={user?.id}
+                    onVote={handleVote}
+                    onEdit={handleEditPoll}
+                    onDelete={handleDeletePoll}
                     showActions={true}
                     variant="compact"
                   />
@@ -390,56 +544,68 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Achievement or Tips Section */}
+        {/* Quick Actions Section */}
         <Card className="mt-8">
           <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <span>🏆</span>
-              <span>Your Progress</span>
-            </CardTitle>
+            <CardTitle className="text-lg">Quick Actions</CardTitle>
             <CardDescription>
-              Keep engaging with the community to unlock achievements
+              Common actions to help you get started
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Poll Creator</span>
-                  <span className="text-sm text-muted-foreground">
-                    {stats.pollsCreated}/10
-                  </span>
-                </div>
-                <Progress
-                  value={(stats.pollsCreated / 10) * 100}
-                  className="h-2"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Create {10 - stats.pollsCreated} more polls to earn the "Poll
-                  Master" badge
-                </p>
-              </div>
-
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Community Voter</span>
-                  <span className="text-sm text-muted-foreground">
-                    {stats.pollsVoted}/50
-                  </span>
-                </div>
-                <Progress
-                  value={(stats.pollsVoted / 50) * 100}
-                  className="h-2"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Vote on {50 - stats.pollsVoted} more polls to earn the
-                  "Community Voice" badge
-                </p>
-              </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Button asChild className="h-16 flex-col space-y-2">
+                <Link href="/polls/create">
+                  <div className="text-2xl">➕</div>
+                  <span className="text-sm">Create Poll</span>
+                </Link>
+              </Button>
+              <Button
+                variant="outline"
+                asChild
+                className="h-16 flex-col space-y-2"
+              >
+                <Link href="/polls">
+                  <div className="text-2xl">📊</div>
+                  <span className="text-sm">Browse Polls</span>
+                </Link>
+              </Button>
             </div>
           </CardContent>
         </Card>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Poll</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this poll? This action cannot be
+              undone. All votes and poll data will be permanently removed.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deletingPoll}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDeletePoll}
+              disabled={deletingPoll}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {deletingPoll ? (
+                <div className="flex items-center space-x-2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  <span>Deleting...</span>
+                </div>
+              ) : (
+                "Delete Poll"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
