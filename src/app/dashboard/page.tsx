@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation"; // Added useParams
 import { Header } from "@/components/layout/header";
 import {
   Card,
@@ -149,6 +149,7 @@ const mockRecentActivity = [
 export default function DashboardPage() {
   const { user } = useAuth();
   const router = useRouter();
+  const params = useParams(); // Added useParams
   const [stats, setStats] = useState<DashboardStats>({
     totalPolls: 0,
     totalVotes: 0,
@@ -162,13 +163,15 @@ export default function DashboardPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [pollToDelete, setPollToDelete] = useState<string | null>(null);
   const [deletingPoll, setDeletingPoll] = useState(false);
+  const [selectedPoll, setSelectedPoll] = useState<Poll | null>(null); //Added
 
   // Fetch dashboard data on component mount
   useEffect(() => {
     if (user) {
       fetchDashboardData();
+      fetchPollData(); //Added to fetch poll data
     }
-  }, [user]);
+  }, [user, params?.pollId]); // Added params?.pollId to trigger re-fetch
 
   const fetchDashboardData = async () => {
     if (!user) return;
@@ -206,6 +209,19 @@ export default function DashboardPage() {
       );
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchPollData = async () => {
+    if (!params?.pollId) return; // Added null check
+
+    try {
+      const poll = await pollsApi.getPollById(params.pollId);
+      setSelectedPoll(poll);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to load poll data",
+      );
     }
   };
 
