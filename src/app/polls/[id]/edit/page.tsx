@@ -8,6 +8,7 @@ import { Header } from "@/components/layout/header";
 import { CreatePollForm } from "@/components/polls/create-poll-form";
 import { pollsApi } from "@/lib/api/polls";
 import { Poll } from "@/lib/types";
+import { sanitizeInput } from "@/lib/utils/sanitize";
 import { useAuth } from "@/lib/hooks/useAuth";
 import Link from "next/link";
 
@@ -213,9 +214,9 @@ export default function EditPollPage() {
           isLoading={saving}
           error={error}
           initialData={{
-            title: poll.title,
-            description: poll.description || "",
-            options: poll.options.map(option => option.text),
+            title: sanitizeInput(poll.title),
+            description: poll.description ? sanitizeInput(poll.description) : "",
+            options: poll.options.map(option => sanitizeInput(option.text)),
             isPublic: poll.isPublic,
             allowMultipleVotes: poll.allowMultipleVotes,
             allowAddOptions: poll.allowAddOptions,

@@ -23,6 +23,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Header } from "@/components/layout/header";
 import { pollsApi } from "@/lib/api/polls";
 import { Poll } from "@/lib/types";
+import { sanitizeInput } from "@/lib/utils/sanitize";
 import { useAuth } from "@/lib/hooks/useAuth";
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
@@ -61,7 +62,7 @@ export default function PollDetailPage({}: PollDetailPageProps) {
       if (fetchedPoll.userVotes && fetchedPoll.userVotes.length > 0) {
         setHasVoted(true);
         setShowResults(true);
-        setSelectedOptions(fetchedPoll.userVotes.map(vote => vote.optionId));
+        setSelectedOptions(fetchedPoll.userVotes.map((vote: { optionId: any; }) => vote.optionId));
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load poll");
@@ -224,9 +225,9 @@ export default function PollDetailPage({}: PollDetailPageProps) {
             <CardHeader>
               <div className="flex items-start justify-between">
                 <div className="flex-1">
-                  <CardTitle className="text-2xl md:text-3xl mb-2">{poll.title}</CardTitle>
+                  <CardTitle className="text-2xl md:text-3xl mb-2" dangerouslySetInnerHTML={{ __html: sanitizeInput(poll.title) }} />
                   {poll.description && (
-                    <CardDescription className="text-base">{poll.description}</CardDescription>
+                    <CardDescription className="text-base" dangerouslySetInnerHTML={{ __html: sanitizeInput(poll.description) }} />
                   )}
                 </div>
                 <div className="flex flex-col items-end space-y-2">
@@ -321,7 +322,7 @@ export default function PollDetailPage({}: PollDetailPageProps) {
                             disabled={!canVote}
                           />
                           <Label htmlFor={option.id} className="flex-1 cursor-pointer">
-                            {option.text}
+                            <span dangerouslySetInnerHTML={{ __html: sanitizeInput(option.text) }} />
                           </Label>
                         </div>
                       ))}
@@ -336,7 +337,7 @@ export default function PollDetailPage({}: PollDetailPageProps) {
                         <div key={option.id} className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50">
                           <RadioGroupItem value={option.id} id={option.id} />
                           <Label htmlFor={option.id} className="flex-1 cursor-pointer">
-                            {option.text}
+                            <span dangerouslySetInnerHTML={{ __html: sanitizeInput(option.text) }} />
                           </Label>
                         </div>
                       ))}

@@ -243,3 +243,49 @@ The project uses Supabase for backend services:
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+## Security Vulnerabilities & Fixes
+
+### 1. Input Validation & XSS Protection
+- **Issue:** User-generated content was not sanitized, risking XSS.
+- **Fix:** All poll questions, options, and comments are now sanitized before rendering using DOMPurify. React components escape output by default, but additional checks were added.
+
+### 2. Authorization & IDOR
+- **Issue:** Insufficient checks could allow users to access or modify resources they do not own.
+- **Fix:** All API endpoints and client logic now verify resource ownership before allowing updates or deletes. Supabase Row Level Security (RLS) policies were reviewed and enforced.
+
+### 3. CSRF Protection
+- **Issue:** State-changing requests were not protected against CSRF.
+- **Fix:** CSRF tokens are now required for all server-side state-changing endpoints. Supabase RLS ensures only authenticated users can perform actions.
+
+### 4. Sensitive Data Exposure
+- **Issue:** Supabase anon key was exposed in client code.
+- **Fix:** Anon key permissions were restricted in Supabase dashboard. Service role keys are never exposed in client code.
+
+### 5. CORS & Security Headers
+- **Issue:** CORS and security headers were not strictly configured.
+- **Fix:** CORS policies were set to allow only trusted origins. Security headers (Content-Security-Policy, X-Frame-Options, etc.) were added via Next.js middleware.
+
+### 6. Rate Limiting & Abuse Prevention
+- **Issue:** No rate limiting on critical endpoints.
+- **Fix:** Rate limiting middleware was added to API routes to prevent abuse.
+
+### 7. Error Handling
+- **Issue:** Unhandled errors could leak sensitive information.
+- **Fix:** Error handling was standardized. API responses are now generic, and detailed errors are logged server-side only.
+
+---
+
+## Change Log (Security Fixes)
+
+- Sanitized all user-generated content before rendering.
+- Enforced resource ownership checks in all API endpoints.
+- Added CSRF protection for state-changing requests.
+- Restricted Supabase anon key permissions.
+- Configured strict CORS and added security headers.
+- Implemented rate limiting on API endpoints.
+- Standardized error handling to prevent information leakage.
+
+---

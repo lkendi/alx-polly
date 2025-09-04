@@ -139,13 +139,7 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 CREATE OR REPLACE VIEW poll_details AS
 SELECT
   p.*,
-  public.get_user_display_name(p.creator_id) as creator_username,
-  (
-    SELECT COUNT(*)::integer
-    FROM votes v
-    JOIN poll_options po ON v.option_id = po.id
-    WHERE po.poll_id = p.id
-  ) as total_votes
+  public.get_user_display_name(p.creator_id) as creator_username
 FROM polls p;
 
 -- Grant access to the view and function
